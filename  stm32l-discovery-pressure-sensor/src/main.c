@@ -79,7 +79,7 @@ int main(void)
     long temperature = 0;
     long pressure = 0;
     long altitude = 0;
-    double HPa = 0;
+    double hPa = 0;
     double temp = 0;
     char LCDmessage[10];
     int i;
@@ -121,9 +121,8 @@ int main(void)
 			printf("Temperature: %ld (in 0.1 deg C)\n", temperature);
 			printf("Pressure: %ld Pa\n\n", pressure);
 
-			// For fun, lets convert to altitude
-			HPa = (double) pressure/101325;
-			HPa = (int) (HPa * 1000);
+			// Convert to altitude
+			hPa = (double) (pressure) / 100;
 			temp = (double) pressure/101325;
 			temp = 1-pow(temp, 0.19029);
 			altitude = round(44330*temp*3.28);
@@ -139,8 +138,7 @@ int main(void)
 
 			LCD_GLASS_Clear();
 			LCD_GLASS_DisplayString((uint8_t*)LCDmessage);
-//			GPIO_TOGGLE(LD_PORT,LD_BLUE);
-//			Delay(500);
+
 			GPIO_TOGGLE(LD_PORT,LD_BLUE);
 			Delay(1000);
     	}
@@ -149,8 +147,8 @@ int main(void)
 
 void BMP085_Calibration(void)
 {
-    printf("\nCalibration Information:\n");
-    printf("------------------------\n");
+	// Read Calibration Information
+
     ac1 = bmp085ReadShort(0xAA);
     ac2 = bmp085ReadShort(0xAC);
     ac3 = bmp085ReadShort(0xAE);
@@ -207,8 +205,7 @@ short bmp085ReadShort(unsigned char address)
     /* Prepare ACK for next I2C operation*/
     I2C_AcknowledgeConfig(I2C2, ENABLE);
 	
-    //data = "" << 8;
-    //data = 0 << 8;
+
     data = msb << 8 | lsb;
 
     return data;
