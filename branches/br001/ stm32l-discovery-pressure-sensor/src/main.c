@@ -10,11 +10,23 @@
 
 
 /* Includes */
+#include "stm32l1xx.h"
+#include "discover_board.h"
+#include "stm32l_discovery_lcd.h"
+#include <stdio.h>
+
 #include <stddef.h>
 #include "stm32l1xx.h"
 #include "stm32l1xx_i2c.h"
 
+/* Touch sensing driver headers */
+#include "tsl.h"
+#include "tsl_user.h"
+
+/* discovery board and specific drivers headers*/
 #include "discover_board.h"
+//#include "icc_measure.h"
+#include "discover_functions.h"
 #include "stm32l_discovery_lcd.h"
 
 /* 7bit add. of slave is 1010.xxx ... does STM library left shift? should it be x50?*/
@@ -74,6 +86,11 @@ short mb;
 short mc;
 short md;
 
+extern volatile bool KeyPressed;      /* */
+extern bool UserButton;               /* Set by interrupt handler to indicate that user button is pressed */
+uint8_t state_machine;                /* Machine status used by main() wich indicats the active function, set by user button in interrupt handler */
+
+
 int main(void)
 {
     long temperature = 0;
@@ -90,6 +107,18 @@ int main(void)
 
     /* Init I/O ports */
     Init_GPIOs();
+
+    /* Enable General interrupts */
+    enableGlobalInterrupts();
+
+    /* Init Touch Sensing configuration */
+    TSL_user_Init();
+
+    /* Reset Keypressed flag used in interrupt and Scrollsentence */
+    KeyPressed = FALSE;
+
+    /* Set application state machine to VREF state  */
+      state_machine = STATE_TEMPERATURE;
 
     Delay(100);
 
@@ -131,10 +160,21 @@ int main(void)
 			/* Set-up I/O ports for LCD*/
 			Init_GPIOs();
 
-			if (i)
-				sprintf(LCDmessage, "  %dft", altitude);
-			else
-				sprintf(LCDmessage, "  %dC", temperature);
+		    switch (state_machine)
+		    {
+		    case STATE_TEMPERATURE:
+		    	sprintf(LCDmessage, "  %dC", temperature);
+		    break;
+
+		    case STATE_PRESSURE:
+		    	sprintf(LCDmessage, "  %dft", hPa);
+		    break;
+
+		    case STATE_ALTITUDE:
+		    	sprintf(LCDmessage, "  %dft", altitude);
+		    break;
+		    }
+
 
 			LCD_GLASS_Clear();
 			LCD_GLASS_DisplayString((uint8_t*)LCDmessage);
